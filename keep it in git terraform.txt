@@ -1,0 +1,132 @@
+
+ubuntu@ip-172-31-22-27:~$ cat main.tf
+provider "aws" {
+    access_key = "AKIA6ODVACCX7DAQ2L2V"
+    secret_key = "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"
+    region = "us-east-1"
+}
+
+
+resource "aws_vpc" "myvpc" {
+    tags = {
+    Name = "myvpc"
+  }
+  cidr_block = "10.0.0.0/16"
+
+}
+resource "aws_internet_gateway" "myigw" {
+    vpc_id = aws_vpc.myvpc.id
+
+    tags ={
+    Name = "myigw"
+    }
+}
+resource "aws_subnet" "mysub" {
+    vpc_id = aws_vpc.myvpc.id
+    availability_zone = "us-east-1a"
+    cidr_block = "10.0.0.0/24"
+    map_public_ip_on_launch = true
+    tags ={
+    Name = "mysub"
+    }
+}
+resource "aws_route_table" "main_route_table" {
+  vpc_id = aws_vpc.myvpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.myigw.id
+  }
+
+
+  tags = {
+    Name = "main-route-table"
+  }
+}
+# Associate Route Table with Subnet
+resource "aws_route_table_association" "subnet_route" {
+  subnet_id      = aws_subnet.mysub.id
+  route_table_id = aws_route_table.main_route_table.id
+}
+resource "aws_security_group" "my_sga" {
+  vpc_id = aws_vpc.myvpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow SSH access from anywhere
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow HTTP access
+  }
+  ingress {
+    from_port   = 0      # Start of port range (0 allows all ports)
+    to_port     = 0      # End of port range (0 allows all ports)
+    protocol    = "-1"   # -1 means all protocols
+    cidr_blocks = ["0.0.0.0/0"] # Allow all traffic from any IP (not secure)
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"] # Allow all outbound traffic
+  }
+
+  tags = {
+    Name = "mysg-groupa"
+  }
+}
+
+resource "aws_instance" "example" {
+  ami          = "ami-0e2c8caa4b6378d8c" # Replace with a valid AMI ID for your region
+  instance_type = var.instance_type
+   count = var.instance_count
+   associate_public_ip_address = var.enable_public_ip
+   subnet_id     = aws_subnet.mysub.id
+        # Small instance type (free-tier eligible)
+        vpc_security_group_ids = [ aws_security_group.my_sga.id]
+
+tags = var.project_environment
+}
+resource "aws_iam_user" "example" {
+  count = length(var.user_names)
+  name  = var.user_names[count.index]
+}
+
+
+ubuntu@ip-172-31-22-27:~$ cat variable.tf
+variable "instance_type" {
+   description = "Instance type t2.micro"
+   type        = string
+   default     = "t2.micro"
+}
+variable "instance_count" {
+  description = "EC2 instance count"
+  type        = number
+  default     = 2
+}
+
+variable "enable_public_ip" {
+  description = "Enable public IP address"
+  type        = bool
+  default     = true
+}
+variable "user_names" {
+  description = "IAM usernames"
+  type        = list(string)
+  default     = ["userss1", "userss2", "userss3s"]
+}
+variable "project_environment" {
+  description = "project name and environment"
+  type        = map(string)
+  default     = {
+    project     = "project-alpha",
+    environment = "dev"
+  }
+}
