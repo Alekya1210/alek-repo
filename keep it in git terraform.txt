@@ -99,7 +99,7 @@ resource "aws_iam_user" "example" {
 }
 
 
-ubuntu@ip-172-31-22-27:~$ cat variable.tf
+ubuntu@ip-xxxxxxxxxxx:~$ cat variable.tf
 variable "instance_type" {
    description = "Instance type t2.micro"
    type        = string
