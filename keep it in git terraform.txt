@@ -1,8 +1,8 @@
 
-ubuntu@ip-172-31-22-27:~$ cat main.tf
+ubuntu@ip-xx-xx-xxxx:~$ cat main.tf
 provider "aws" {
-    access_key = "AKIA6ODVACCX7DAQ2L2V"
-    secret_key = "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"
+    access_key = "xxxxxxxxxxxxxxxx"
+    secret_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     region = "us-east-1"
 }
 
@@ -89,7 +89,6 @@ resource "aws_instance" "example" {
    count = var.instance_count
    associate_public_ip_address = var.enable_public_ip
    subnet_id     = aws_subnet.mysub.id
-        # Small instance type (free-tier eligible)
         vpc_security_group_ids = [ aws_security_group.my_sga.id]
 
 tags = var.project_environment
